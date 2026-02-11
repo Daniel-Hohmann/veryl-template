@@ -1,48 +1,28 @@
-# Docker Image Name und Tag
-IMAGE_NAME := veryl-dev
-IMAGE_TAG := latest
+# Docker image name and tag
+IMAGE_NAME ?= veryl-dev
+IMAGE_TAG ?= latest
 
-# Container Name
-CONTAINER_NAME := veryl-dev-container
-
-# Hilfe anzeigen
+# Show help
+.PHONY: help
 help:
-	@echo "Verfügbare Befehle:"
-	@echo "  make build     - Baut das Veryl Dev-Image"
-	@echo "  make run       - Startet interaktiven Container (mountet aktuelles Verzeichnis)"
-	@echo "  make dev       - Baut und startet Container"
-	@echo "  make stop      - Stoppt den Container"
-	@echo "  make clean     - Entfernt Container und Image"
-	@echo "  make veryl     - Führt 'veryl --version' im Container aus"
+	@echo "Available commands:"
+	@echo "  make build              - Build with VeryL (Ubuntu 24.04 + Rust + VeryL)"
+	@echo "  make run                - Start standard container (VeryL only)"
+	@echo "  make clean              - Remove images"
 
-# Image bauen
+# Standard build (VeryL always included, Ubuntu 24.04 + Rust)
+.PHONY: build
 build:
-	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	docker build --progress=plain -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	@echo "✓ VeryL image built: $(IMAGE_NAME):$(IMAGE_TAG)"
 
-# Container interaktiv starten (Volume-Mount für Code)
+# Start standard container (always has VeryL)
+.PHONY: run
 run:
-	docker run -it --rm \
-		--name $(CONTAINER_NAME) \
-		-v $$PWD:/workspace \
-		-w /workspace \
-		$(IMAGE_NAME):$(IMAGE_TAG)
-
-# Build + Run (Dev-Shortcut)
-dev: build run
-
-# Container stoppen
-stop:
-	docker stop $(CONTAINER_NAME) || true
+	docker run -it --rm -v $$PWD:/workspace -w /workspace $(IMAGE_NAME):$(IMAGE_TAG)
 
 # Cleanup
+.PHONY: clean
 clean:
-	docker stop $(CONTAINER_NAME) || true
-	docker rm $(CONTAINER_NAME) || true
-	docker rmi $(IMAGE_NAME):$(IMAGE_TAG) || true
-
-# Veryl Version checken
-veryl:
-	docker run --rm $(IMAGE_NAME):$(IMAGE_TAG) veryl --version
-
-.PHONY: help build run dev stop clean veryl
-
+	docker rmi $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):rggen || true
+	@echo "✓ Old images removed"
